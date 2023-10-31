@@ -8,6 +8,7 @@ pub fn Vec3(comptime T: type) type {
         const V3 = @Vector(3, T);
         pub const F = T;
         var prng = std.rand.DefaultPrng.init(0);
+        const random_state = prng.random();
 
         data: @Vector(3, T),
         pub fn x(self: Self) T {
@@ -86,12 +87,10 @@ pub fn Vec3(comptime T: type) type {
             };
         }
         pub fn random() Self {
-            const rand = prng.random();
-            return Self{ .data = .{ rand.float(T), rand.float(T), rand.float(T) } };
+            return Self{ .data = .{ random_state.float(T), random_state.float(T), random_state.float(T) } };
         }
         pub fn random_between(min: T, max: T) Self {
-            const rand = prng.random();
-            const v = Self{ .data = .{ rand.float(T), rand.float(T), rand.float(T) } };
+            const v = Self{ .data = .{ random_state.float(T), random_state.float(T), random_state.float(T) } };
             return v.mul_s(max - min).add_s(min);
         }
         pub fn random_in_sphere() Self {
@@ -163,7 +162,7 @@ test "Vec3" {
     try expect(std.meta.eql(v1.normalize().data, .{ 0.57735026919, 0.57735026919, 0.57735026919 }));
     try expect(std.meta.eql(v1.cross(v2).data, .{ 0, 0, 0 }));
 
-    const v_r = Vec3F.random();
+    const v_r = Vec3F.random_state();
     const v_r2 = Vec3F.random_between(12, 24);
     _ = v_r2;
     _ = v_r;

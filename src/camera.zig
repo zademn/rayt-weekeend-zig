@@ -8,6 +8,8 @@ const Progress = std.Progress;
 
 pub const Camera = struct {
     const Self = @This();
+    var prng = std.rand.DefaultPrng.init(0);
+    const random_state = prng.random();
     aspect_ratio: F,
     image_width: usize,
     samples_per_pixel: usize,
@@ -27,26 +29,25 @@ pub const Camera = struct {
     pixel_delta_u: Vec3F,
     pixel_delta_v: Vec3F,
     pixel00_loc: Vec3F,
-    prng: *std.rand.DefaultPrng,
     u: Vec3F,
     v: Vec3F,
     w: Vec3F,
     defocus_disk_u: Vec3F,
     defocus_disk_v: Vec3F,
 
-    pub fn new(aspect_ratio: f32, image_width: usize, samples_per_pixel: usize, max_depth: usize, vfov: f32, lookfrom: Vec3F, lookat: Vec3F, vup: Vec3F, focus_dist: f32, defocus_angle: f32, prng: *std.rand.DefaultPrng) Self {
+    pub fn new(aspect_ratio: f32, image_width: usize, samples_per_pixel: usize, max_depth: usize, vfov: f32, lookfrom: Vec3F, lookat: Vec3F, vup: Vec3F, focus_dist: f32, defocus_angle: f32) Self {
         const iw_F = @as(F, @floatFromInt(image_width));
         const image_height = @as(usize, @intFromFloat(iw_F / aspect_ratio));
         const ih_F = @as(F, @floatFromInt(image_height));
         const center = lookfrom;
         const focal_length = lookfrom.sub(lookat).norm();
 
-        const theta = std.math.degreesToRadians(f32, vfov);
+        const theta = std.math.degreesToRadians(F, vfov);
         const h = @tan(theta / 2.0);
 
         const w = lookfrom.sub(lookat).normalize();
         const u = vup.cross(w).normalize();
-        const v = w.cross(u);
+        const v = w.cross(u).normalize();
         //viewport
         // const viewport_height: f32 = 2.0 * h * focal_length;
         const viewport_height = 2 * h * focus_dist;
@@ -58,12 +59,10 @@ pub const Camera = struct {
         const pixel_delta_u = viewport_u.div_s(iw_F);
         const pixel_delta_v = viewport_v.div_s(ih_F);
         const pixel00_loc = viewport_upper_left.add((pixel_delta_u.add(pixel_delta_v)).mul_s(0.5));
-        const rand = prng;
 
-        const defocus_radius = focus_dist * @tan(std.math.degreesToRadians(f32, defocus_angle) / 2);
+        const defocus_radius = focus_dist * @tan(std.math.degreesToRadians(f32, defocus_angle / 2));
         const defocus_disk_u = u.mul_s(defocus_radius);
         const defocus_disk_v = v.mul_s(defocus_radius);
-        _ = rand;
         return Self{
             .aspect_ratio = aspect_ratio,
             .image_width = image_width,
@@ -87,7 +86,6 @@ pub const Camera = struct {
             .pixel_delta_v = pixel_delta_v,
             .pixel00_loc = pixel00_loc,
             .samples_per_pixel = samples_per_pixel,
-            .prng = prng,
         };
     }
     pub fn render(self: Self, world: *HittableList) !void {
@@ -118,7 +116,7 @@ pub const Camera = struct {
         const pixel_sample = pixel_center.add(self.pixel_sample_sqr());
 
         const ray_origin = if (self.defocus_angle <= 0) self.center else self.defocus_disk_sample();
-        const ray_direction = pixel_sample.sub(self.center);
+        const ray_direction = pixel_sample.sub(ray_origin);
         return Ray{ .orig = ray_origin, .dir = ray_direction };
     }
 
@@ -128,9 +126,8 @@ pub const Camera = struct {
     }
 
     fn pixel_sample_sqr(self: Self) Vec3F {
-        const rand = self.prng.random();
-        const px = rand.float(F) - 0.5;
-        const py = rand.float(F) - 0.5;
+        const px = random_state.float(F) - 0.5;
+        const py = random_state.float(F) - 0.5;
         return self.pixel_delta_u.mul_s(px).add(self.pixel_delta_v.mul_s(py));
     }
     fn ray_color(r: Ray, depth: usize, world: *HittableList) Vec3F {

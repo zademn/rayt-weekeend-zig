@@ -40,7 +40,7 @@ pub const Metal = struct {
     pub fn scatter(self: Self, ray: Ray, hit_rec: HitRecord) ?struct { Ray, Vec3F } {
         const fuzz = std.math.clamp(self.fuzz, 0, 1);
         const reflected = ray.dir.normalize().reflect(hit_rec.normal);
-        const scattered = Ray{ .orig = hit_rec.point, .dir = reflected.add(Vec3F.random_unit_vector().mul_s(fuzz)) };
+        const scattered = Ray{ .orig = hit_rec.point, .dir = reflected.add(Vec3F.random_in_sphere().mul_s(fuzz)) };
         const attenuation = self.albedo;
         if (scattered.dir.dot(hit_rec.normal) > 0.0) {
             return .{ scattered, attenuation };
@@ -52,6 +52,7 @@ pub const Metal = struct {
 pub const Dielectric = struct {
     const Self = @This();
     var prng = std.rand.DefaultPrng.init(0);
+    const random = prng.random();
     refraction_index: F,
 
     pub fn scatter(self: Self, ray: Ray, hit_rec: HitRecord) ?struct { Ray, Vec3F } {
@@ -63,7 +64,7 @@ pub const Dielectric = struct {
         const cos_theta = @min(unit_dir.neg().dot(hit_rec.normal), 1.0);
         const sin_theta = @sqrt(1.0 - cos_theta * cos_theta);
         const cannot_refract = refraction_ratio * sin_theta > 1.0;
-        const refl = self.refelctance(cos_theta, refraction_ratio) > prng.random().float(f32);
+        const refl = self.refelctance(cos_theta, refraction_ratio) > random.float(f32);
         const dir = if (cannot_refract or refl) unit_dir.reflect(hit_rec.normal) else unit_dir.refract(hit_rec.normal, refraction_ratio);
         const scattered = Ray{ .orig = hit_rec.point, .dir = dir };
         return .{ scattered, attenuation };

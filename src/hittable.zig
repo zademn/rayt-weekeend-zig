@@ -5,7 +5,7 @@ const F = @import("./types.zig").Float;
 const Ray = @import("./ray.zig").Ray;
 const Allocator = std.mem.Allocator;
 const Material = @import("./material.zig").Material;
-const tol = 0.001;
+const tol = 0.01;
 
 pub const HitRecord = struct {
     const Self = @This();
@@ -13,7 +13,7 @@ pub const HitRecord = struct {
     point: Vec3F,
     normal: Vec3F,
     front_face: bool,
-    material: *Material,
+    material: *const Material,
 
     pub fn set_face_normal(self: *Self, r: Ray, outward_normal: Vec3F) void {
         assert(outward_normal.norm() - 1 < tol);
@@ -28,7 +28,7 @@ pub const Sphere = struct {
     // fields
     center: Vec3F,
     radius: F,
-    material: *Material,
+    material: *const Material,
     // methods
     pub fn hit(self: Self, r: Ray, ray_tmin: F, ray_tmax: F) ?HitRecord {
         const oc = r.orig.sub(self.center);
