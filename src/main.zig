@@ -43,7 +43,7 @@ pub fn cover_img() !void {
     var prng = std.rand.DefaultPrng.init(1);
     const random = prng.random();
     var ground_material = Material{ .lambertian = Lambertian{ .albedo = Vec3F{ .data = .{ 0.5, 0.5, 0.5 } } } };
-    try world.append(Hittable{ .sphere = Sphere{ .center = Vec3F{ .data = .{ 0, -1000, 0 } }, .material = &ground_material, .radius = 1000 } });
+    try world.append(Hittable{ .sphere = Sphere{ .center = Vec3F{ .data = .{ 0, -1000, 0 } }, .material = ground_material, .radius = 1000 } });
     var ai: isize = -11;
     while (ai < 11) : (ai += 1) {
         const a = @as(f32, @floatFromInt(ai));
@@ -56,33 +56,30 @@ pub fn cover_img() !void {
                 if (choose_mat < 1) {
                     // diffuse
                     const albedo = Vec3F.random();
+                    // const sphere_material_ptr = try alloc.create(Material);
                     const sphere_material = Material{ .lambertian = Lambertian{ .albedo = albedo } };
-                    std.debug.print("{}\n", .{sphere_material.lambertian.albedo});
-                    try world.append(Hittable{ .sphere = Sphere{ .center = center, .material = &sphere_material, .radius = 0.2 } });
+                    try world.append(Hittable{ .sphere = Sphere{ .center = center, .material = sphere_material, .radius = 0.2 } });
                 } else if (choose_mat < 0.6) {
                     // metal
                     const albedo = Vec3F.random_between(0.5, 1);
                     const fuzz = random.float(F) / 2;
                     const sphere_material = Material{ .metal = Metal{ .albedo = albedo, .fuzz = fuzz } };
-                    try world.append(Hittable{ .sphere = Sphere{ .center = center, .material = &sphere_material, .radius = 0.2 } });
+                    try world.append(Hittable{ .sphere = Sphere{ .center = center, .material = sphere_material, .radius = 0.2 } });
                 } else {
                     // glass
                     const sphere_material = Material{ .dielectric = Dielectric{ .refraction_index = 1.5 } };
-                    try world.append(Hittable{ .sphere = Sphere{ .center = center, .material = &sphere_material, .radius = 0.2 } });
+                    try world.append(Hittable{ .sphere = Sphere{ .center = center, .material = sphere_material, .radius = 0.2 } });
                 }
             }
         }
     }
-    for (world.objects.items) |item| {
-        std.debug.print("a {}\n", .{item.sphere.material.lambertian.albedo});
-    }
 
     const material1 = Material{ .dielectric = Dielectric{ .refraction_index = 1.5 } };
-    try world.append(Hittable{ .sphere = Sphere{ .center = Vec3F{ .data = .{ 0, 1, 0 } }, .material = &material1, .radius = 1.0 } });
+    try world.append(Hittable{ .sphere = Sphere{ .center = Vec3F{ .data = .{ 0, 1, 0 } }, .material = material1, .radius = 1.0 } });
     const material2 = Material{ .lambertian = Lambertian{ .albedo = Vec3F{ .data = .{ 0.4, 0.2, 0.1 } } } };
-    try world.append(Hittable{ .sphere = Sphere{ .center = Vec3F{ .data = .{ -4, 1, 0 } }, .material = &material2, .radius = 1.0 } });
+    try world.append(Hittable{ .sphere = Sphere{ .center = Vec3F{ .data = .{ -4, 1, 0 } }, .material = material2, .radius = 1.0 } });
     const material3 = Material{ .metal = Metal{ .albedo = Vec3F{ .data = .{ 0.7, 0.6, 0.5 } }, .fuzz = 0.0 } };
-    try world.append(Hittable{ .sphere = Sphere{ .center = Vec3F{ .data = .{ 4, 1, 0 } }, .material = &material3, .radius = 1.0 } });
+    try world.append(Hittable{ .sphere = Sphere{ .center = Vec3F{ .data = .{ 4, 1, 0 } }, .material = material3, .radius = 1.0 } });
 
     const aspect_ratio: comptime_float = 16.0 / 9.0;
     const image_width: comptime_int = 400;
@@ -96,8 +93,7 @@ pub fn cover_img() !void {
     const defocus_angle = 0.2;
     const focus_dist = 10.0;
     const cam = Camera.new(aspect_ratio, image_width, samples_per_pixel, max_depth, vfov, lookfrom, lookat, vup, focus_dist, defocus_angle);
-    _ = cam;
-    // try cam.render(&world);
+    try cam.render(&world);
 }
 
 pub fn exercices() !void {

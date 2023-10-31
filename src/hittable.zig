@@ -28,7 +28,7 @@ pub const Sphere = struct {
     // fields
     center: Vec3F,
     radius: F,
-    material: *const Material,
+    material: Material,
     // methods
     pub fn hit(self: Self, r: Ray, ray_tmin: F, ray_tmax: F) ?HitRecord {
         const oc = r.orig.sub(self.center);
@@ -55,7 +55,7 @@ pub const Sphere = struct {
             .point = point,
             .front_face = false,
             .normal = outward_normal,
-            .material = self.material,
+            .material = &self.material,
         };
         hit_rec.set_face_normal(r, outward_normal);
         return hit_rec;
