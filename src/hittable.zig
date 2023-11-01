@@ -28,9 +28,9 @@ pub const Sphere = struct {
     // fields
     center: Vec3F,
     radius: F,
-    material: Material,
+    material: *const Material,
     // methods
-    pub fn hit(self: Self, r: Ray, ray_tmin: F, ray_tmax: F) ?HitRecord {
+    pub fn hit(self: *const Self, r: Ray, ray_tmin: F, ray_tmax: F) ?HitRecord {
         const oc = r.orig.sub(self.center);
         const a = r.dir.norm_sqr();
         const half_b = oc.dot(r.dir);
@@ -55,7 +55,7 @@ pub const Sphere = struct {
             .point = point,
             .front_face = false,
             .normal = outward_normal,
-            .material = &self.material,
+            .material = self.material,
         };
         hit_rec.set_face_normal(r, outward_normal);
         return hit_rec;
@@ -65,19 +65,19 @@ pub const Sphere = struct {
 pub const HittableList = struct {
     const Self = @This();
     // fields
-    objects: std.ArrayList(Hittable),
+    objects: std.ArrayList(*const Hittable),
     allocator: Allocator,
     // methods
     pub fn init(allocator: Allocator) Self {
-        return Self{ .objects = std.ArrayList(Hittable).init(allocator), .allocator = allocator };
+        return Self{ .objects = std.ArrayList(*const Hittable).init(allocator), .allocator = allocator };
     }
     pub fn deinit(self: *Self) void {
         self.objects.deinit();
     }
-    pub fn append(self: *Self, object: Hittable) !void {
+    pub fn append(self: *Self, object: *const Hittable) !void {
         try self.objects.append(object);
     }
-    pub fn hit(self: Self, r: Ray, t_min: F, t_max: F) ?HitRecord {
+    pub fn hit(self: *const Self, r: Ray, t_min: F, t_max: F) ?HitRecord {
         var maybe_hit: ?HitRecord = null;
         var closest_so_far = t_max;
         for (self.objects.items) |object| {
@@ -95,8 +95,8 @@ pub const Hittable = union(enum) {
     sphere: Sphere,
     hittable_list: HittableList,
 
-    pub fn hit(self: Self, r: Ray, t_min: F, t_max: F) ?HitRecord {
-        switch (self) {
+    pub fn hit(self: *const Self, r: Ray, t_min: F, t_max: F) ?HitRecord {
+        switch (self.*) {
             inline else => |obj| return obj.hit(r, t_min, t_max),
         }
     }
